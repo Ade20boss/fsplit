@@ -9,7 +9,6 @@ void split(char *filename, int split_nums)
     if (split_nums <= 0)
     {
         fprintf(stderr, "Number of splits cannot be less than or equal to zero\n");
-        printf("Aborting\n");
         exit(-1);
     }
 
@@ -19,7 +18,6 @@ void split(char *filename, int split_nums)
     if (buffer == NULL)
     {
         fprintf(stderr, "Cannot allocate memory to buffer\n");
-        printf("Aborting\n");
         free(buffer);
         exit(-1);
     }
@@ -28,7 +26,6 @@ void split(char *filename, int split_nums)
     if (file_pointer == NULL)
     {
         fprintf(stderr, "Cannot open file\n");
-        printf("Aborting\n");
         free(buffer);
         exit(-1);
     }
@@ -37,30 +34,27 @@ void split(char *filename, int split_nums)
 
     if (fseek(file_pointer, 0, SEEK_END) == 0)
     {
-        filesize = ftell(file_pointer);
-        if (filesize < 0)
-        {
+        long ftell_check = ftell(file_pointer);
+        if (ftell_check < 0){
             fprintf(stderr, "Error checking file size\n");
-            printf("Aborting\n");
             fclose(file_pointer);
             free(buffer);
             exit(-1);
         }
-
+        filesize = ftell_check;
     }
     else
     {
         fprintf(stderr, "Unable to check file_size\n");
-        printf("Aborting\n");
         fclose(file_pointer);
         free(buffer);
         exit(-1);
     }
     size_t partsize = filesize / split_nums;
     size_t remainder = filesize % split_nums;
-    printf("File_size: %ld bytes\n", filesize);
-    printf("Part_size: %ld bytes\n", partsize);
-    printf("Remainder_size: %ld bytes\n", remainder);
+    printf("File_size: %zu bytes\n", filesize);
+    printf("Part_size: %zu bytes\n", partsize);
+    printf("Remainder_size: %zu bytes\n", remainder);
     
 
 
@@ -79,11 +73,10 @@ void split(char *filename, int split_nums)
         }
        
         char partfilename[256];
-        size_t result = snprintf(partfilename, sizeof(partfilename), "%s_%d", filename, i+1);
-        if (result < 0 || result >= sizeof(partfilename))
+        int result = snprintf(partfilename, sizeof(partfilename), "%s_%d", filename, i+1);
+        if (result < 0 || result >= (int)sizeof(partfilename))
         {
             fprintf(stderr, "Filename too long\n");
-            printf("Aborting\n");
             fclose(file_pointer);
             free(buffer);
             exit(-1);
@@ -93,31 +86,36 @@ void split(char *filename, int split_nums)
         if (partfile_pointer == NULL)
         {
             fprintf(stderr, "Cannot create file for this chunk\n");
-            printf("Aborting\n");
             fclose(file_pointer);
             free(buffer);
             exit(-1);
         }
 
-        while (bytes_left_in_part > 0)
+        while(bytes_left_in_part > 0)
         {
-            if(bytes_left_in_part > READ_SIZE)
-            {
-                 fread(buffer, READ_SIZE, 1, file_pointer);
-                 fwrite(buffer, READ_SIZE, 1, partfile_pointer);
-                 bytes_left_in_part = bytes_left_in_part - READ_SIZE;
-                
+            size_t to_read = (bytes_left_in_part > READ_SIZE) ? READ_SIZE : bytes_left_in_part;
+            
+            // Read from the main file_pointer
+            if (fread(buffer, 1, to_read, file_pointer) != to_read) {
+                fprintf(stderr, "Error: Read failure on source file\n");
+                fclose(partfile_pointer);
+                fclose(file_pointer);
+                free(buffer);
+                exit(-1);
+            }
 
+            // Write to the current partfile_pointer
+            if (fwrite(buffer, 1, to_read, partfile_pointer) != to_read) {
+                fprintf(stderr, "Error: Write failure on %s\n", partfilename);
+                fclose(partfile_pointer);
+                fclose(file_pointer);
+                free(buffer);
+                exit(-1);
             }
-            else
-            {
-                 fread(buffer, bytes_left_in_part, 1, file_pointer);
-                 fwrite(buffer, bytes_left_in_part, 1, partfile_pointer);
-                  bytes_left_in_part = 0;
-            }
-           
+            bytes_left_in_part -= to_read;
         }
         fclose(partfile_pointer);
+        
        
 
     }
