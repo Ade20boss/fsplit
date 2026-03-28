@@ -13,8 +13,8 @@ void split(char *filename, int split_nums)
         exit(-1);
     }
 
-    long filesize;
-    long bytes_left_in_part;
+    size_t filesize;
+    size_t bytes_left_in_part;
     void *buffer = malloc(READ_SIZE);
     if (buffer == NULL)
     {
@@ -56,8 +56,8 @@ void split(char *filename, int split_nums)
         free(buffer);
         exit(-1);
     }
-    long partsize = filesize / split_nums;
-    long remainder = filesize % split_nums;
+    size_t partsize = filesize / split_nums;
+    size_t remainder = filesize % split_nums;
     printf("File_size: %ld bytes\n", filesize);
     printf("Part_size: %ld bytes\n", partsize);
     printf("Remainder_size: %ld bytes\n", remainder);
@@ -79,7 +79,7 @@ void split(char *filename, int split_nums)
         }
        
         char partfilename[256];
-        int result = snprintf(partfilename, sizeof(partfilename), "%s_%d", filename, i+1);
+        size_t result = snprintf(partfilename, sizeof(partfilename), "%s_%d", filename, i+1);
         if (result < 0 || result >= sizeof(partfilename))
         {
             fprintf(stderr, "Filename too long\n");
@@ -132,14 +132,12 @@ int main(int argc, char *argv[])
 {
     if (argc != 3)
     {
-        printf("Usage: %s <filename> <number-of-splits>\n", argv[0]);
-        printf("Aborting\n");
+        fprintf(stderr, "Usage: %s <filename> <number-of-splits>\n", argv[0]);
         exit(-1);
     }
     if (strlen(argv[1]) > 245)
     {
         fprintf(stderr, "Filename cannot be more than 256 characters\n");
-        printf("Aborting\n");
         exit(-1);
     }
 
@@ -147,4 +145,3 @@ int main(int argc, char *argv[])
 
     return 0;
 }
-

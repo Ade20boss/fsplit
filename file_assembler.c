@@ -2,25 +2,34 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define READ_SIZE 1000
+#define READ_SIZE 4096
 
 void assemble(char *filename, int part_no)
 {
-    long bytes_left_in_part;
-    long part_size;
+    size_t bytes_left_in_part;
+    size_t part_size;
     char restored_name[256];
     snprintf(restored_name, sizeof(restored_name), "restored_%s", filename);
+    FILE *check_pointer = fopen(restored_name, "rb");
+    if (check_pointer != NULL) 
+    {
+        fprintf(stderr, "Error: File '%s' already exists. Aborting to prevent overwrite.\n", restored_name);
+        fclose(check_pointer);
+        exit(-1);
+    }
+
     FILE *output_pointer = fopen(restored_name, "wb");
     if (output_pointer == NULL)
     {
-        printf("Cannot open file");
+        fprintf(stderr, "Cannot open file\n");
         exit(-1);
     }
 
     void *buffer = malloc(READ_SIZE);
     if (buffer == NULL)
     {
-        printf("Cannot allocate memory to buffer");
+        fprintf(stderr, "Cannot allocate memory to buffer\n");
+        fclose(output_pointer);
         exit(-1);
     }
 
@@ -32,7 +41,9 @@ void assemble(char *filename, int part_no)
 
         if(part_pointer == NULL)
         {
-            printf("Cannot open file");
+            fprintf(stderr, "Cannot open file\n");
+            fclose(output_pointer);
+            free(buffer);
             exit(-1);
         }
 
@@ -42,7 +53,10 @@ void assemble(char *filename, int part_no)
         }
         else
         {
-            printf("Unable to check file_size");
+            fprintf(stderr, "Unable to check file_size\n");
+            fclose(output_pointer);
+            fclose(part_pointer);
+            free(buffer);
             exit(-1);
         }
         
@@ -77,7 +91,17 @@ int main(int argc, char * argv[])
 {
     if (argc != 3)
     {
-        printf("Usage: %s <filename> <number-of-parts>\n", argv[0]);
+        fprintf(stderr, "Usage: %s <filename> <number-of-parts>\n", argv[0]);
+        exit(-1);
+    }
+    if (atoi(argv[2]) <= 0)
+    {
+        fprintf(stderr, "Number of splits must be more than zero\n");
+        exit(-1);
+    }
+    if (strlen(argv[1]) > 245)
+    {
+        fprintf(stderr, "Filename cannot be more than 256 characters\n");
         exit(-1);
     }
 
