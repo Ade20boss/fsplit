@@ -5,7 +5,7 @@
 #define READ_SIZE 4096
 
 void split(char *filename, int split_nums)
-{   
+{
     if (split_nums <= 0)
     {
         fprintf(stderr, "Number of splits cannot be less than or equal to zero\n");
@@ -18,7 +18,7 @@ void split(char *filename, int split_nums)
     if (buffer == NULL)
     {
         fprintf(stderr, "Cannot allocate memory to buffer\n");
-        free(buffer);
+        
         exit(-1);
     }
 
